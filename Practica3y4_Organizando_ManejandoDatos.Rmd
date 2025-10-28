@@ -220,9 +220,6 @@ pew_tidy <- gather(
 
 head(pew_tidy)
 
-#-> %y POSIX -> strftime(as.Date('01-01-69'), format="%d-%m-%y", "%Y")
-#antes del 69 es del 1900, depsués es 2000
-
 ```
 
 Otro ejemplo usando el conjunto de datos `Billboard` que muestra cuando una canción entró en el top 100.
@@ -247,7 +244,7 @@ library(lubridate)  # para manejar fechas
 
 names_col <- grep("wk", colnames(raw), value = TRUE)
 
-raw %>% 
+my_billboard <- raw %>% 
   pivot_longer(col=names_col, names_to="week", values_to="rank",
                names_prefix = "wk",values_drop_na = TRUE) %>%
   mutate(
@@ -255,6 +252,7 @@ raw %>%
     date = as.Date(date.entered) + weeks(week - 1)  # calcula fecha de esa semana
   )
 
+head(my_billboard)
 ```
 
 
@@ -276,7 +274,14 @@ Para pasar a formato _tidy_ necesitamos realizar dos operaciones en este caso. E
 Convierte el conjunto de datos TB en _tidy_ utilizando `gather` y `separate`.
 
 ```{r}
+#colnames(raw)
+names_col <- grep(pattern = "^(m|f)", x = colnames(raw), value = TRUE)
+names_col
+my_tuberculosis <- raw %>%
+  gather(key = "demografia", value = "casos", names_col, na.rm = TRUE) %>%
+  separate(col = demografia, into = c("sexo", "edad"), sep = 1)
 
+head(my_tuberculosis)
 ```
 
 
@@ -298,8 +303,18 @@ Para obtener la versión _tidy_ primero juntamos todos los días en una variable
 Obtén la versión _tidy_ del conjunto de datos `weather` utilizando las funciones `pivot_longer` y `pivot_wider`. Además cambiaremos las columnas `year`, `month` y `dia` por una única variable `fecha`. Para que la operación `pivot_wider` no de error tendremos que eliminar los NA's cuando usemos `pivot_longer`.
 
 ```{r}
+library(strings)
 
+#Hay un mcdonnel que está mal escrito en inglés,
+#usar filter str_detect
 
+planes.f <- planes %>%
+              filter(str_detect(str_to_lower(manufacturer), '*.douglas.*'), negate=TRUE) %>%
+              filter(between(seats, 90, 210)) %>%
+              mutate(manufacturer = ifelse(str_detect(str_to_lower(manufacturer), '*.douglas.*')), 'AIRBUS COMP', manufacturer))
+
+#-> %y POSIX -> strftime(as.Date('01-01-69'), format="%d-%m-%y", "%Y")
+#antes del 69 es del 1900, depsués es 2000
 ```
 
 
@@ -366,7 +381,8 @@ En nuestro estudio queremos aplicar una serie de criterios de exclusión sobre l
 Crea un data frame denominado `flights.f` que contenga los vuelos que involucren a los aviones presentes en el data frame `planes.f`. Para ello utiliza algunas de las funciones de **XXX_join** y la variable `tailnum` que es común en ambos data frames. 
 
 ```{r }
-
+flights.f <- flights.f %>%
+              inner_join(planes.f %>% select(tailnum), by="tailnum")
 
 ```
 
@@ -376,6 +392,8 @@ Reasigna los nombres de los data frames `planes.f` y `flights.f` a los nombres o
 
 ```{r }
 
+planes <- planes.f
+flights <- flights.f
 ```
 
 
@@ -387,7 +405,8 @@ Existen variables que, a priori, no tienen demasiado interés para el estudio qu
 * En el data frame  `planes` quédate con todas las variables excepto `speed` y `type`.
 
 ```{r }
-
+flights <- flights %>%
+            select(-time_hour, -starts_with('time'))
 ```
 
 ### Ejercicio 10
@@ -404,6 +423,12 @@ Incorpora una nueva variable a `flights` denominado `Full_Date` que sea de tipo 
 Utilizando las funciones `group_by`, `summarise` y `filter`, crea un data frame donde se calcule el número de vuelos (`Num_flights`), la distancia media recorrida (`Mean_distance`) y la distancia total recorrida (`Total_distance`) para cada uno de los aviones (`tailnum`) presentes en el conjunto `flights`. Descarta aquellos registros del data frame en los que la variable `tailnum` tenga un valor NA. Utiliza el operador pipe para enlazar las funciones. Almacena el data frame en una variable denominada `Distances_plane`.  
 
 ```{r }
+
+agregado <- fligths %>%
+  gruopp_by(tailnum) %>%
+  summarise(Num_flights = n(),
+            Mean_distance = mean(distancia),
+            Total_distance = sum(distancia))
 
 ```
 
