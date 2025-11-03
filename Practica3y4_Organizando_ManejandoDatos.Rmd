@@ -385,7 +385,24 @@ En nuestro estudio queremos aplicar una serie de criterios de exclusión sobre l
 
 ```{r }
 
+unique(planes$manufacturer)
 
+library(dplyr)
+
+planes.f <- planes %>%
+  # 1️⃣ Eliminar los aviones de McDonnell Douglas (cualquier denominación posible)
+  filter(!grepl("MCDONNELL|McDonnell", manufacturer, ignore.case = TRUE)) %>%
+  
+  # 2️⃣ Seleccionar los aviones con número de asientos entre 90 y 210
+  filter(seats >= 90 & seats <= 210) %>%
+  
+  # 3️⃣ Unificar denominaciones del fabricante AIRBUS
+  mutate(manufacturer = ifelse(grepl("AIRBUS", manufacturer, ignore.case = TRUE),
+                               "AIRBUS COMP",
+                               manufacturer))
+
+
+planes.f %>% count(manufacturer)
 
 ```
 
@@ -395,9 +412,12 @@ En nuestro estudio queremos aplicar una serie de criterios de exclusión sobre l
 Crea un data frame denominado `flights.f` que contenga los vuelos que involucren a los aviones presentes en el data frame `planes.f`. Para ello utiliza algunas de las funciones de **XXX_join** y la variable `tailnum` que es común en ambos data frames. 
 
 ```{r }
-flights.f <- flights.f %>%
-              inner_join(planes.f %>% select(tailnum), by="tailnum")
+library(dplyr)
 
+flights.f <- flights %>%
+  inner_join(planes.f, by = "tailnum")
+
+flights.f
 ```
 
 ### Ejercicio 8
@@ -428,8 +448,14 @@ flights <- flights %>%
 Incorpora una nueva variable a `flights` denominado `Full_Date` que sea de tipo `character` que incorpore una cadena de texto de la forma `d-m-Y`. Donde `d` indica día, `m` mes e `Y` año, a partir de la información incluida en el data frame. Utiliza una función de **DPLYR** que permita conseguir este propósito. Elimina las variables originales involucradas en la creación de la nueva variable.
 
 ```{r }
+library(dplyr)
 
+head(flights)
+flights <- flights %>%
+  mutate(Full_Date = paste(day, month, "year.x", sep = "-")) %>%
+  select(-year.x, -month, -day)
 
+head(flights)
 ```
 
 ### Ejercicio 11
@@ -438,11 +464,19 @@ Utilizando las funciones `group_by`, `summarise` y `filter`, crea un data frame 
 
 ```{r }
 
-agregado <- fligths %>%
-  gruopp_by(tailnum) %>%
-  summarise(Num_flights = n(),
-            Mean_distance = mean(distancia),
-            Total_distance = sum(distancia))
+library(dplyr)
+
+Distances_plane <- flights %>%
+  filter(!is.na(tailnum)) %>%
+  group_by(tailnum) %>%
+  summarise(
+    Num_flights = n(),
+    Mean_distance = mean(distance, na.rm = TRUE),
+    Total_distance = sum(distance, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+head(Distances_plane)
 
 ```
 
