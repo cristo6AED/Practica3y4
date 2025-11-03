@@ -303,18 +303,22 @@ Para obtener la versión _tidy_ primero juntamos todos los días en una variable
 Obtén la versión _tidy_ del conjunto de datos `weather` utilizando las funciones `pivot_longer` y `pivot_wider`. Además cambiaremos las columnas `year`, `month` y `dia` por una única variable `fecha`. Para que la operación `pivot_wider` no de error tendremos que eliminar los NA's cuando usemos `pivot_longer`.
 
 ```{r}
-library(strings)
+library(tidyr)
+library(dplyr)
 
-#Hay un mcdonnel que está mal escrito en inglés,
-#usar filter str_detect
+# Reestructuración del conjunto de datos
+weather_tidy <- raw %>%
+  pivot_longer(cols = starts_with("d"), 
+               names_to = "dia", 
+               values_to = "temperatura", 
+               values_drop_na = TRUE) %>%
+  pivot_wider(names_from = element, values_from = temperatura) %>%
+  mutate(fecha = as.Date(paste(year, month, gsub("d", "", dia), sep = "-"))) %>%
+  select(-year, -month, -dia)
 
-planes.f <- planes %>%
-              filter(str_detect(str_to_lower(manufacturer), '*.douglas.*'), negate=TRUE) %>%
-              filter(between(seats, 90, 210)) %>%
-              mutate(manufacturer = ifelse(str_detect(str_to_lower(manufacturer), '*.douglas.*')), 'AIRBUS COMP', manufacturer))
+# Mostrar el resultado
+head(weather_tidy)
 
-#-> %y POSIX -> strftime(as.Date('01-01-69'), format="%d-%m-%y", "%Y")
-#antes del 69 es del 1900, depsués es 2000
 ```
 
 
@@ -360,6 +364,16 @@ load("./data/VuelosNY.Rdata")
 Muestra las primeras muestras de ambos data frames para hacerte una idea de las variables que contienen. ¿Qué diferencia existe entre la información mostrada en ambos data frames?
 
 ```{r }
+head(flights)
+head(planes)
+
+cat("flights contiene detalles de vuelos y retrasos, mientras que planes tiene detalles sobre los aviones, como su modelo, fabricante y capacidad. Ambos data frames se pueden combinar usando una clave común, que sería plane_id, ya que cada vuelo de flights probablemente está asociado con un avión de planes.")
+
+flights_info <- flights %>%
+  left_join(planes, by = c("tailnum" = "tailnum"))
+
+# Ver las primeras filas del data frame combinado
+head(flights_info)
 
 ```
 
